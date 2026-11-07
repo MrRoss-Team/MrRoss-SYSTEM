@@ -1,7 +1,3 @@
-# HackBox – część dla zsh (ładowana przez /etc/thm/shell.rc).
-# Dokleja do promptu Kali segment z IP VPN i IP celu, np.:
-#   ┌──(10.8.0.5→10.10.1.2)─(kali㉿hackbox)-[~/thm/rooms/pokoj]
-
 setopt promptsubst
 typeset -g THM_PS=""
 
@@ -31,7 +27,6 @@ _thm_patch_prompt() {
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd _thm_zsh_precmd
 
-# Kali przebudowuje prompt (np. Ctrl+P) funkcją configure_prompt – doklejamy segment ponownie
 if (( ${+functions[configure_prompt]} )) && (( ! ${+functions[_thm_kali_configure_prompt]} )); then
     functions[_thm_kali_configure_prompt]="${functions[configure_prompt]}"
     configure_prompt() {
@@ -41,7 +36,6 @@ if (( ${+functions[configure_prompt]} )) && (( ! ${+functions[_thm_kali_configur
 fi
 _thm_patch_prompt
 
-# Podpowiedzi (Tab) dla polecenia thm
 _thm_complete() {
     local -a subcmds
     subcmds=(

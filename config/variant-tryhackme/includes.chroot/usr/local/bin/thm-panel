@@ -1,9 +1,4 @@
 #!/bin/sh
-#
-# thm-panel – wskaźnik w panelu Xfce (wtyczka genmon).
-# Pokazuje IP w VPN TryHackMe i IP maszyny ustawione przez "thm target".
-# Kliknięcie: kopiuje IP VPN albo (gdy VPN wyłączony) otwiera okno łączenia.
-#
 vpn_ip="$(ip -4 -o addr show 2>/dev/null | awk '$2 ~ /^(tun|tap)/ { split($4, a, "/"); print a[1]; exit }')"
 
 target=""

@@ -27,7 +27,6 @@
   <rect width="1920" height="1080" fill="url(#glow)"/>
   <rect width="1920" height="1080" fill="url(#glow2)"/>
 
-  <!-- sieć węzłów -->
   <g stroke="#22c55e" stroke-opacity="0.35" stroke-width="2" fill="none">
     <path d="M1180 250 L1390 330 L1560 240 L1700 360 L1600 520 L1400 470 L1390 330"/>
     <path d="M1400 470 L1280 600 L1460 690 L1600 520"/>
@@ -46,7 +45,6 @@
   <circle cx="1460" cy="690" r="16" fill="#ef4444" filter="url(#blur)" opacity="0.8"/>
   <circle cx="1460" cy="690" r="9" fill="#ef4444"/>
 
-  <!-- okno terminala -->
   <g transform="translate(150 330)">
     <rect width="760" height="380" rx="14" fill="#0d1426" stroke="#24345c" stroke-width="2"/>
     <rect width="760" height="44" rx="14" fill="#16213d"/>
@@ -64,7 +62,6 @@
     </g>
   </g>
 
-  <!-- tytuł -->
   <g font-family="Fira Code, DejaVu Sans Mono, monospace">
     <text x="150" y="215" font-size="96" font-weight="700" fill="#f8fafc">Hack<tspan fill="#22c55e">Box</tspan></text>
     <text x="156" y="270" font-size="30" fill="#94a3b8">TryHackMe edition · nauka przez praktykę</text>

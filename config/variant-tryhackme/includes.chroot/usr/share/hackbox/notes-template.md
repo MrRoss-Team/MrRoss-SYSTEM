@@ -11,8 +11,6 @@
 
 ## Notatki
 
-<!-- co sprawdziłem, co znalazłem, jakie polecenia zadziałały -->
-
 ## Odpowiedzi
 
 | Task | Pytanie | Odpowiedź |

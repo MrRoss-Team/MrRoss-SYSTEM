@@ -1,12 +1,3 @@
-<#
-.SYNOPSIS
-  Skleja czesci ISO pobrane z GitHuba (*.iso.part00, *.iso.part01, ...) w jeden plik
-  i sprawdza sume SHA256.
-
-.EXAMPLE
-  .\join-iso.ps1                 # w biezacym katalogu
-  .\join-iso.ps1 -Dir D:\Pobrane
-#>
 param([string]$Dir = '.')
 
 $ErrorActionPreference = 'Stop'

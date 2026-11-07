@@ -1,23 +1,3 @@
-<#
-.SYNOPSIS
-  Buduje obraz ISO HackBox (Kali Linux dla TryHackMe) na Windows przez Docker Desktop.
-
-.DESCRIPTION
-  Uruchamia build.sh w kontenerze kalilinux/kali-rolling. Caly proces budowania
-  odbywa sie w wolumenie Dockera "hackbox-work" (NIE na OneDrive), a do katalogu
-  -Output trafia tylko gotowy plik ISO.
-
-  Wymagania:
-    - Docker Desktop (uruchomiony, backend WSL2)
-    - ok. 30 GB wolnego miejsca na dysku, na ktorym Docker trzyma dane
-      (Docker Desktop -> Settings -> Resources -> Disk image location)
-    - 4 GB RAM dla Dockera, szybki internet
-
-.EXAMPLE
-  .\build.ps1
-  .\build.ps1 -Output D:\iso
-  .\build.ps1 -Clean      # usuwa wolumen roboczy (np. po nieudanym budowaniu)
-#>
 [CmdletBinding()]
 param(
     [string]$Output = (Join-Path $PSScriptRoot 'output'),
@@ -48,7 +28,6 @@ if ($Clean) {
     cmd /c "docker volume rm $volume >nul 2>&1"
 }
 
-# Ostrzezenie o miejscu na dysku C: (domyslna lokalizacja danych Docker Desktop)
 $freeGB = [math]::Round((Get-PSDrive C).Free / 1GB, 1)
 if ($freeGB -lt 30) {
     Warn "Na dysku C: jest tylko $freeGB GB wolnego miejsca. Budowanie potrzebuje ok. 30 GB."

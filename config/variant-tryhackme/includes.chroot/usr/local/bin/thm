@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-#
-# thm – pomocnik HackBox do nauki na TryHackMe
-# Pełna lista poleceń: thm help
-#
 set -uo pipefail
 
 THM_CFG="${XDG_CONFIG_HOME:-$HOME/.config}/thm"
@@ -32,7 +28,6 @@ die() {
   exit 1
 }
 
-# Uruchamia polecenie jako root (w trybie graficznym pyta o hasło w okienku)
 as_root() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
@@ -46,10 +41,6 @@ as_root() {
 notify()    { command -v notify-send >/dev/null 2>&1 && notify-send -i network-vpn "$1" "$2" 2>/dev/null; return 0; }
 copy_clip() { command -v xclip >/dev/null 2>&1 && printf '%s' "$1" | xclip -selection clipboard 2>/dev/null; return 0; }
 markup_esc() { printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
-
-# ---------------------------------------------------------------------------
-# VPN
-# ---------------------------------------------------------------------------
 
 vpn_ip() {
   ip -4 -o addr show 2>/dev/null | awk '$2 ~ /^(tun|tap)/ { split($4, a, "/"); print a[1]; exit }'
@@ -67,7 +58,6 @@ vpn_pid() {
 
 vpn_running() { [ -n "$(vpn_pid)" ]; }
 
-# Najnowszy plik .ovpn z typowych miejsc
 find_ovpn() {
   local d f newest=""
   for d in "$VPN_DIR" "$HOME/Downloads" "$HOME/Pobrane" "$HOME/Desktop" "$HOME/Pulpit" "$HOME"; do
@@ -106,7 +96,6 @@ vpn_start() {
   fi
 
   info "Łączenie z VPN TryHackMe ($(basename "$cfg"))..."
-  # AES-256-CBC na końcu listy: zgodność ze starszymi plikami .ovpn z THM
   as_root openvpn --config "$cfg" --daemon thm-vpn \
       --log "$VPN_LOG" --writepid "$VPN_PID" \
       --data-ciphers 'AES-256-GCM:AES-128-GCM:CHACHA20-POLY1305:AES-256-CBC' \
@@ -161,7 +150,6 @@ vpn_status() {
   fi
 }
 
-# Wersja okienkowa – ikona na pulpicie i kliknięcie w panelu
 vpn_gui() {
   GUI=1
   command -v zenity >/dev/null 2>&1 || die "Brak programu zenity."
@@ -203,10 +191,6 @@ vpn_gui() {
   fi
 }
 
-# ---------------------------------------------------------------------------
-# Cel (IP maszyny z pokoju)
-# ---------------------------------------------------------------------------
-
 valid_ip() {
   [[ "$1" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]] || return 1
   local o
@@ -215,7 +199,6 @@ valid_ip() {
   done
 }
 
-# Utrzymuje w /etc/hosts jeden blok HackBox z nazwami celu
 hosts_update() {
   local line="$1" tmp
   tmp="$(mktemp)"
@@ -271,10 +254,6 @@ cmd_target() {
   info "W terminalu: \$TARGET i \$IP – odświeżą się przy następnym prompcie."
 }
 
-# ---------------------------------------------------------------------------
-# Pokoje (foldery z notatkami)
-# ---------------------------------------------------------------------------
-
 cmd_room() {
   local name="${1:-}"
   if [ -z "$name" ]; then
@@ -288,7 +267,6 @@ cmd_room() {
     return 0
   fi
 
-  # Akceptuje nazwę albo link https://tryhackme.com/room/<nazwa>
   local slug
   slug="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' \
           | sed -E -e 's#^https?://(www\.)?tryhackme\.com/(r/)?room/##' \
@@ -317,13 +295,8 @@ cmd_room() {
     cmd_target "$ip" "$@"
   fi
   info "Pokój: ${B}${dir}${N}  (notatki: notes.md)"
-  # Ścieżka na stdout – funkcja powłoki "thm" przechodzi do tego katalogu
   printf '%s\n' "$dir"
 }
-
-# ---------------------------------------------------------------------------
-# Pozostałe
-# ---------------------------------------------------------------------------
 
 cmd_status() {
   local t r

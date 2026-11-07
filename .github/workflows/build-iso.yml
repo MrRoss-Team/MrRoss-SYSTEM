@@ -1,10 +1,5 @@
 name: Zbuduj ISO HackBox
 
-# Budowanie uruchamia się:
-#  - ręcznie: Actions → "Zbuduj ISO HackBox" → Run workflow,
-#  - po wypchnięciu zmian w konfiguracji systemu na gałąź main,
-#  - po wypchnięciu tagu v* (np. v1.0).
-# Gotowe ISO (pocięte na części < 2 GB) trafia do zakładki Releases.
 on:
   workflow_dispatch:
   push:
@@ -100,8 +95,6 @@ jobs:
             output/*.sha256
             join-iso.ps1
 
-      # Przy błędzie: końcówka logu jako adnotacja – widoczna na stronie runu
-      # (także przez publiczne API, bez uprawnień administratora repozytorium).
       - name: Log budowania (przy błędzie)
         if: failure()
         run: |

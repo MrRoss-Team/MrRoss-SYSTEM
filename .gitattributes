@@ -1,4 +1,3 @@
-# Skrypty uruchamiane w Linuksie muszą mieć końce linii LF
 * text=auto eol=lf
 *.ps1 text eol=crlf
 *.png binary

@@ -1,19 +1,9 @@
-## HackBox – wariant "tryhackme"
-## Lista pakietów instalowanych w obrazie. Jeden pakiet w linii.
-## Wszystkie nazwy sprawdzone w repozytorium kali-rolling.
-## Pełna lista narzędzi: https://www.kali.org/tools/
-
-## --- System live + pulpit Xfce (jak w oficjalnym Kali) ---
 kali-linux-core
 kali-desktop-live
 kali-desktop-xfce
 
-## --- 10 najpopularniejszych narzędzi Kali ---
-## (nmap, metasploit-framework, burpsuite, sqlmap, hydra, john,
-##  netexec, responder, wireshark, aircrack-ng)
 kali-tools-top10
 
-## --- Narzędzia często używane w pokojach TryHackMe ---
 gobuster
 ffuf
 dirb
@@ -28,11 +18,9 @@ binwalk
 steghide
 libimage-exiftool-perl
 
-## --- VPN TryHackMe ---
 openvpn
 network-manager-openvpn-gnome
 
-## --- Integracja z pulpitem (polecenie thm, panel, okna dialogowe) ---
 zenity
 libnotify-bin
 xclip
@@ -40,7 +28,6 @@ xfce4-genmon-plugin
 librsvg2-bin
 flameshot
 
-## --- Narzędzia ogólne ---
 git
 jq
 tmux

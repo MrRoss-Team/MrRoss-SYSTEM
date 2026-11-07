@@ -1,6 +1,3 @@
-# HackBox – część dla bash (ładowana przez /etc/thm/shell.rc).
-# Dodaje na początku promptu segment [IP_VPN → IP_celu].
-
 _thm_bash_prompt() {
     _thm_refresh
     THM_PS_BASH=""
