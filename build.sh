@@ -189,7 +189,12 @@ apply_overlay() {
   cp -R "$SRC_DIR/config/variant-$VARIANT/." "$v/"
 
   # Pliki mogły przejść przez Windows – usuń końce linii CRLF z plików tekstowych
-  grep -rIl $'\r' "$v" 2>/dev/null | while IFS= read -r f; do sed -i 's/\r$//' "$f"; done
+  # (grep zwraca 1, gdy nic nie znajdzie – przy pipefail nie może przerwać skryptu)
+  local crlf_files
+  crlf_files="$( grep -rIl $'\r' "$v" 2>/dev/null || true )"
+  if [ -n "$crlf_files" ]; then
+    while IFS= read -r f; do sed -i 's/\r$//' "$f"; done <<< "$crlf_files"
+  fi
 
   # Właściciel i uprawnienia (live-build kopiuje je 1:1 do systemu)
   chown -R root:root "$v"
@@ -225,7 +230,7 @@ run_native() {
       --output "$kout" )
 
   local iso name
-  iso="$( find "$kout" -maxdepth 1 -type f -name '*.iso' | head -n 1 )"
+  iso="$( find "$kout" -maxdepth 1 -type f -name '*.iso' | head -n 1 || true )"
   [ -n "$iso" ] || die "Budowanie zakończone, ale nie znaleziono pliku ISO w $kout"
   name="hackbox-thm-${VERSION}-amd64.iso"
 

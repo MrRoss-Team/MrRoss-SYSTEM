@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Pobierz repozytorium
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Zwolnij miejsce na dysku
         run: |
@@ -64,11 +64,12 @@ jobs:
 
       - name: Zbuduj ISO (oficjalne skrypty Kali w kontenerze)
         run: |
+          set -o pipefail
           chmod +x build.sh
           sudo ./build.sh \
             --work-dir "${{ steps.prep.outputs.dir }}" \
             --output "$GITHUB_WORKSPACE/output" \
-            --version "${{ steps.prep.outputs.version }}"
+            --version "${{ steps.prep.outputs.version }}" 2>&1 | tee "$RUNNER_TEMP/build.log"
 
       - name: Podziel ISO na części mniejsze niż 2 GB
         run: |
@@ -99,7 +100,17 @@ jobs:
             output/*.sha256
             join-iso.ps1
 
+      # Przy błędzie: końcówka logu jako adnotacja – widoczna na stronie runu
+      # (także przez publiczne API, bez uprawnień administratora repozytorium).
       - name: Log budowania (przy błędzie)
         if: failure()
         run: |
-          sudo find output "${{ steps.prep.outputs.dir }}/out" -name '*.log' -exec tail -n 200 {} \; 2>/dev/null || true
+          {
+            sudo find "${{ steps.prep.outputs.dir }}/out" -name '*.log' -exec tail -n 120 {} \; 2>/dev/null
+            echo "----- build.sh -----"
+            tail -n 60 "$RUNNER_TEMP/build.log" 2>/dev/null
+          } > "$RUNNER_TEMP/err.txt" || true
+          cat "$RUNNER_TEMP/err.txt"
+          msg=$(tail -n 90 "$RUNNER_TEMP/err.txt" | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | cut -c1-300 \
+                | sed -e ':a' -e 'N' -e '$!ba' -e 's/%/%25/g' -e 's/\r/%0D/g' -e 's/\n/%0A/g')
+          echo "::error title=Błąd budowania ISO::${msg}"
