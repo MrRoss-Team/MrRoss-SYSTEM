@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=TryHackMe
+Comment=Otwórz panel TryHackMe w przeglądarce
+Comment[en]=Open the TryHackMe dashboard in the browser
+Exec=xdg-open https://tryhackme.com/dashboard
+Icon=web-browser
+Terminal=false
+Categories=Network;WebBrowser;
+Keywords=tryhackme;thm;learn;

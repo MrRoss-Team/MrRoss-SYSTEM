@@ -1,0 +1,105 @@
+name: Zbuduj ISO HackBox
+
+# Budowanie uruchamia się:
+#  - ręcznie: Actions → "Zbuduj ISO HackBox" → Run workflow,
+#  - po wypchnięciu zmian w konfiguracji systemu na gałąź main,
+#  - po wypchnięciu tagu v* (np. v1.0).
+# Gotowe ISO (pocięte na części < 2 GB) trafia do zakładki Releases.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "config/**"
+      - "build.sh"
+      - ".github/workflows/build-iso.yml"
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-iso-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Pobierz repozytorium
+        uses: actions/checkout@v4
+
+      - name: Zwolnij miejsce na dysku
+        run: |
+          df -h / /mnt || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
+          docker system prune -af || true
+          df -h / /mnt || true
+
+      - name: Przygotuj katalog roboczy i wersję
+        id: prep
+        run: |
+          root_free=$(df --output=avail -B1G / | tail -n 1 | tr -d ' ')
+          mnt_free=$(df --output=avail -B1G /mnt 2>/dev/null | tail -n 1 | tr -d ' ' || true)
+          if [ -n "$mnt_free" ] && [ "$mnt_free" -gt "$root_free" ]; then
+            dir=/mnt/hackbox-work
+          else
+            dir="$RUNNER_TEMP/hackbox-work"
+          fi
+          sudo mkdir -p "$dir"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+            tag="$GITHUB_REF_NAME"
+          else
+            version="$(date -u +%Y.%m.%d)-${GITHUB_RUN_NUMBER}"
+            tag="build-${version}"
+          fi
+          echo "Katalog roboczy: $dir (wolne: / ${root_free} GB, /mnt ${mnt_free:-0} GB), wersja: $version"
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Zbuduj ISO (oficjalne skrypty Kali w kontenerze)
+        run: |
+          chmod +x build.sh
+          sudo ./build.sh \
+            --work-dir "${{ steps.prep.outputs.dir }}" \
+            --output "$GITHUB_WORKSPACE/output" \
+            --version "${{ steps.prep.outputs.version }}"
+
+      - name: Podziel ISO na części mniejsze niż 2 GB
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" output
+          cd output
+          iso=$(ls hackbox-thm-*.iso)
+          split -b 1900M -d -a 2 "$iso" "$iso.part"
+          rm -f "$iso"
+          ls -lh
+
+      - name: Opublikuj w Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.prep.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: HackBox ${{ steps.prep.outputs.version }}
+          prerelease: ${{ github.ref_type != 'tag' }}
+          body: |
+            HackBox – Kali Linux przygotowany do nauki na TryHackMe.
+
+            **Jak pobrać:** ściągnij wszystkie pliki `.part*`, plik `.sha256` i `join-iso.ps1`
+            do jednego folderu, a potem w PowerShellu uruchom `.\join-iso.ps1` – skrypt sklei ISO
+            i sprawdzi sumę kontrolną.
+
+            Login w trybie live: `kali` / `kali`. Pomoc w systemie: `thm help`.
+          files: |
+            output/*.iso.part*
+            output/*.sha256
+            join-iso.ps1
+
+      - name: Log budowania (przy błędzie)
+        if: failure()
+        run: |
+          sudo find output "${{ steps.prep.outputs.dir }}/out" -name '*.log' -exec tail -n 200 {} \; 2>/dev/null || true

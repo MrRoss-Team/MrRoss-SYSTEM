@@ -1,0 +1,93 @@
+#!/bin/sh
+#
+# HackBox – konfiguracja systemu podczas budowania obrazu.
+# live-build uruchamia ten skrypt wewnątrz chroota, po instalacji pakietów
+# i skopiowaniu plików z includes.chroot.
+#
+set -u
+
+log()  { echo "I: hackbox: $*"; }
+warn() { echo "W: hackbox: $*" >&2; }
+
+# Odsuwa plik należący do pakietu Kali (zostaje jako <plik>.kali), żeby można
+# było podstawić własny. Dzięki dpkg-divert zmiana przetrwa aktualizacje pakietów.
+divert() {
+    [ -e "$1" ] || [ -L "$1" ] || return 1
+    dpkg-divert --local --rename --add --divert "$1.kali" "$1" >/dev/null
+}
+
+# --- 1. Uprawnienia naszych programów ---------------------------------------
+for f in thm thm-panel thm-firstrun thm-askpass; do
+    [ -f "/usr/local/bin/$f" ] && chmod 0755 "/usr/local/bin/$f"
+done
+
+# --- 2. Integracja powłoki (zsh i bash) -------------------------------------
+for rc in /etc/skel/.zshrc /etc/skel/.bashrc /root/.zshrc /root/.bashrc; do
+    [ -f "$rc" ] || continue
+    grep -q '/etc/thm/shell.rc' "$rc" && continue
+    printf '\n# HackBox – integracja z TryHackMe (VPN i cel w prompcie, polecenie thm)\n[ -r /etc/thm/shell.rc ] && . /etc/thm/shell.rc\n' >> "$rc"
+    log "dodano /etc/thm/shell.rc do $rc"
+done
+mkdir -p /etc/skel/thm/vpn /etc/skel/thm/rooms
+
+# --- 3. Panel Xfce: wskaźnik VPN pokazuje też IP maszyny --------------------
+# Kali ma w panelu wtyczkę genmon z własnym skryptem IP VPN i pilnuje przy
+# każdym logowaniu, by wskazywała na ten plik – więc podmieniamy sam plik.
+K=/usr/share/kali-themes/xfce4-panel-genmon-vpnip.sh
+if divert "$K"; then
+    ln -sf /usr/local/bin/thm-panel "$K"
+    log "panel: wskaźnik VPN zastąpiony przez thm-panel"
+else
+    warn "nie znaleziono $K – pomijam panel"
+fi
+
+# --- 4. Tapeta ---------------------------------------------------------------
+W=/usr/share/backgrounds/hackbox
+if command -v rsvg-convert >/dev/null 2>&1 \
+   && rsvg-convert -w 1920 -h 1080 -o "$W/hackbox.png" "$W/hackbox.svg"; then
+    D=/usr/share/backgrounds/kali-16x9/default
+    if divert "$D"; then
+        ln -sf "$W/hackbox.png" "$D"
+        log "ustawiono tapetę HackBox"
+    else
+        warn "nie znaleziono $D – zostaje tapeta Kali"
+    fi
+else
+    warn "nie udało się wyrenderować tapety – zostaje tapeta Kali"
+fi
+
+# --- 5. Firefox: strona startowa i zakładki TryHackMe ------------------------
+P=/usr/share/firefox-esr/distribution/policies.json
+X=/usr/share/hackbox/firefox-policies.json
+if [ -f "$X" ] && command -v python3 >/dev/null 2>&1; then
+    base=""
+    divert "$P" && base="$P.kali"
+    mkdir -p "$(dirname "$P")"
+    if python3 - "$base" "$X" "$P" <<'EOF'
+import json
+import sys
+
+base_path, extra_path, out_path = sys.argv[1:4]
+data = {"policies": {}}
+if base_path:
+    with open(base_path, encoding="utf-8") as f:
+        data = json.load(f)
+with open(extra_path, encoding="utf-8") as f:
+    extra = json.load(f)
+data.setdefault("policies", {}).update(extra.get("policies", {}))
+with open(out_path, "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+EOF
+    then
+        log "Firefox: dodano stronę startową i zakładki TryHackMe"
+    else
+        warn "Firefox: nie udało się scalić policies.json – przywracam oryginał"
+        [ -n "$base" ] && cp -f "$base" "$P"
+    fi
+fi
+
+# --- 6. Informacja o wersji --------------------------------------------------
+printf 'HackBox (TryHackMe edition) – zbudowano %s\n' "$(date -u +%Y-%m-%d)" > /etc/hackbox-release
+
+exit 0

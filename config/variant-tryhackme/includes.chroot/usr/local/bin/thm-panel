@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# thm-panel – wskaźnik w panelu Xfce (wtyczka genmon).
+# Pokazuje IP w VPN TryHackMe i IP maszyny ustawione przez "thm target".
+# Kliknięcie: kopiuje IP VPN albo (gdy VPN wyłączony) otwiera okno łączenia.
+#
+vpn_ip="$(ip -4 -o addr show 2>/dev/null | awk '$2 ~ /^(tun|tap)/ { split($4, a, "/"); print a[1]; exit }')"
+
+target=""
+f="${XDG_CONFIG_HOME:-$HOME/.config}/thm/target"
+[ -r "$f" ] && target="$(head -n 1 "$f" | tr -cd '0-9.')"
+
+if [ -n "$vpn_ip" ]; then
+    if [ -n "$target" ]; then
+        text="$vpn_ip → $target"
+        tip="VPN TryHackMe: $vpn_ip
+Cel (maszyna): $target
+Kliknij, aby skopiować swoje IP"
+    else
+        text="$vpn_ip"
+        tip="VPN TryHackMe: $vpn_ip
+Kliknij, aby skopiować swoje IP"
+    fi
+    printf '<icon>network-vpn-symbolic</icon>'
+    printf '<txt>%s</txt>' "$text"
+    printf "<iconclick>sh -c 'printf %s | xclip -selection clipboard'</iconclick>" "$vpn_ip"
+    printf "<txtclick>sh -c 'printf %s | xclip -selection clipboard'</txtclick>" "$vpn_ip"
+    printf '<tool>%s</tool>' "$tip"
+else
+    printf '<icon>network-vpn-disconnected-symbolic</icon>'
+    printf '<txt>THM: offline</txt>'
+    printf '<iconclick>/usr/local/bin/thm vpn-gui</iconclick>'
+    printf '<txtclick>/usr/local/bin/thm vpn-gui</txtclick>'
+    printf '<tool>VPN TryHackMe jest rozłączony – kliknij, aby połączyć</tool>'
+fi

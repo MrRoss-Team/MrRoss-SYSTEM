@@ -1,0 +1,3 @@
+#!/bin/sh
+# Okienko z pytaniem o hasło dla "sudo -A" (używane przez thm vpn-gui)
+exec zenity --password --title="HackBox – hasło użytkownika (sudo)"
