@@ -2,17 +2,17 @@
 param(
     [string]$Output = (Join-Path $PSScriptRoot 'output'),
     [string]$Version = (Get-Date -Format 'yyyy.MM.dd'),
-    [string]$HostName = 'hackbox',
+    [string]$HostName = 'mrross',
     [string]$KaliRef = '',
     [switch]$Clean
 )
 
 $ErrorActionPreference = 'Stop'
 $image = 'docker.io/kalilinux/kali-rolling:latest'
-$volume = 'hackbox-work'
+$volume = 'mrross-work'
 
-function Info($msg) { Write-Host "[HackBox] $msg" -ForegroundColor Green }
-function Warn($msg) { Write-Host "[HackBox] $msg" -ForegroundColor Yellow }
+function Info($msg) { Write-Host "[MrRoss OS] $msg" -ForegroundColor Green }
+function Warn($msg) { Write-Host "[MrRoss OS] $msg" -ForegroundColor Yellow }
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw 'Nie znaleziono dockera. Zainstaluj Docker Desktop: https://www.docker.com/products/docker-desktop/'
@@ -46,16 +46,16 @@ Info "Wynik:   $Output"
 Info "Wersja:  $Version"
 Info 'Start budowania - to potrwa 30-90 minut...'
 
-$envArgs = @('--env', "VERSION=$Version", '--env', "LIVE_HOSTNAME=$HostName", '--env', 'SRC_DIR=/hackbox')
+$envArgs = @('--env', "VERSION=$Version", '--env', "LIVE_HOSTNAME=$HostName", '--env', 'SRC_DIR=/mrross')
 if ($KaliRef) { $envArgs += @('--env', "KALI_LB_REF=$KaliRef") }
 
-$inner = "tr -d '\r' < /hackbox/build.sh > /tmp/hackbox-build.sh && exec bash /tmp/hackbox-build.sh --native --work-dir /work --output /out"
+$inner = "tr -d '\r' < /mrross/build.sh > /tmp/mrross-build.sh && exec bash /tmp/mrross-build.sh --native --work-dir /work --output /out"
 
 & docker pull $image
 if ($LASTEXITCODE -ne 0) { throw 'Nie udalo sie pobrac obrazu kalilinux/kali-rolling.' }
 
 & docker run --rm --privileged `
-    --volume "${src}:/hackbox:ro" `
+    --volume "${src}:/mrross:ro" `
     --volume "${volume}:/work" `
     --volume "${Output}:/out" `
     @envArgs `
@@ -66,5 +66,5 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Info "Gotowe! Plik ISO jest w: $Output"
-Get-ChildItem $Output -Filter 'hackbox-thm-*.iso' | Format-Table Name, @{n = 'GB'; e = { [math]::Round($_.Length / 1GB, 2) } }
-Info 'Miejsce zajmuje jeszcze wolumen roboczy. Usuniesz go poleceniem: docker volume rm hackbox-work'
+Get-ChildItem $Output -Filter 'mrross-os-*.iso' | Format-Table Name, @{n = 'GB'; e = { [math]::Round($_.Length / 1GB, 2) } }
+Info 'Miejsce zajmuje jeszcze wolumen roboczy. Usuniesz go poleceniem: docker volume rm mrross-work'

@@ -1,4 +1,4 @@
-name: Zbuduj ISO HackBox
+name: Zbuduj ISO MrRoss OS
 
 on:
   workflow_dispatch:
@@ -40,9 +40,9 @@ jobs:
           root_free=$(df --output=avail -B1G / | tail -n 1 | tr -d ' ')
           mnt_free=$(df --output=avail -B1G /mnt 2>/dev/null | tail -n 1 | tr -d ' ' || true)
           if [ -n "$mnt_free" ] && [ "$mnt_free" -gt "$root_free" ]; then
-            dir=/mnt/hackbox-work
+            dir=/mnt/mrross-work
           else
-            dir="$RUNNER_TEMP/hackbox-work"
+            dir="$RUNNER_TEMP/mrross-work"
           fi
           sudo mkdir -p "$dir"
           if [ "$GITHUB_REF_TYPE" = "tag" ]; then
@@ -70,7 +70,7 @@ jobs:
         run: |
           sudo chown -R "$(id -u):$(id -g)" output
           cd output
-          iso=$(ls hackbox-thm-*.iso)
+          iso=$(ls mrross-os-*.iso)
           split -b 1900M -d -a 2 "$iso" "$iso.part"
           rm -f "$iso"
           ls -lh
@@ -80,16 +80,18 @@ jobs:
         with:
           tag_name: ${{ steps.prep.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: HackBox ${{ steps.prep.outputs.version }}
+          name: MrRoss OS ${{ steps.prep.outputs.version }}
           prerelease: ${{ github.ref_type != 'tag' }}
           body: |
-            HackBox – Kali Linux przygotowany do nauki na TryHackMe.
+            MrRoss OS – system do nauki na TryHackMe (na bazie Kali Linux).
 
             **Jak pobrać:** ściągnij wszystkie pliki `.part*`, plik `.sha256` i `join-iso.ps1`
             do jednego folderu, a potem w PowerShellu uruchom `.\join-iso.ps1` – skrypt sklei ISO
             i sprawdzi sumę kontrolną.
 
-            Login w trybie live: `kali` / `kali`. Pomoc w systemie: `thm help`.
+            Login w trybie live: `mrross` / `mrross`. Pomoc w systemie: `thm help`.
+
+            Projekt niezależny – niezwiązany z TryHackMe, Kali Linux ani OffSec.
           files: |
             output/*.iso.part*
             output/*.sha256

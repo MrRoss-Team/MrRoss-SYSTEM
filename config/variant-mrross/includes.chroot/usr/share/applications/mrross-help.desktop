@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Pomoc MrRoss OS
+Name[en]=MrRoss OS help
+Comment=Ściąga: jak połączyć się z TryHackMe i używać polecenia thm
+Comment[en]=Cheat sheet for the thm command
+Exec=/usr/local/bin/thm help-gui
+Icon=mrross-logo
+Terminal=false
+Categories=Utility;
+Keywords=tryhackme;thm;help;pomoc;mrross;

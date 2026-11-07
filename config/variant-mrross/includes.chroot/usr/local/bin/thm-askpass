@@ -1,0 +1,2 @@
+#!/bin/sh
+exec zenity --password --title="MrRoss OS – hasło użytkownika (sudo)"

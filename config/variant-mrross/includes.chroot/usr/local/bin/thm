@@ -1,0 +1,405 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+THM_CFG="${XDG_CONFIG_HOME:-$HOME/.config}/thm"
+THM_HOME="${THM_HOME:-$HOME/thm}"
+VPN_DIR="$THM_HOME/vpn"
+ROOMS_DIR="$THM_HOME/rooms"
+VPN_PID=/run/thm-vpn.pid
+VPN_LOG=/var/log/thm-vpn.log
+NOTES_TEMPLATE=/usr/share/mrross/notes-template.md
+HOSTS_BEGIN='# >>> mrross thm-target >>>'
+HOSTS_END='# <<< mrross thm-target <<<'
+GUI=0
+
+if [ -t 2 ]; then
+  R=$'\e[31m' G=$'\e[32m' Y=$'\e[33m' B=$'\e[1m' N=$'\e[0m'
+else
+  R='' G='' Y='' B='' N=''
+fi
+
+info() { printf '%s[*]%s %s\n' "$G" "$N" "$*" >&2; }
+warn() { printf '%s[!]%s %s\n' "$Y" "$N" "$*" >&2; }
+die() {
+  printf '%s[x]%s %s\n' "$R" "$N" "$*" >&2
+  if [ "$GUI" = 1 ] && command -v zenity >/dev/null 2>&1; then
+    zenity --error --title="MrRoss OS" --width=420 --no-markup --text="$*" 2>/dev/null
+  fi
+  exit 1
+}
+
+as_root() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+  elif [ "$GUI" = 1 ] && [ -x /usr/local/bin/thm-askpass ]; then
+    SUDO_ASKPASS=/usr/local/bin/thm-askpass sudo -A "$@"
+  else
+    sudo "$@"
+  fi
+}
+
+notify()    { command -v notify-send >/dev/null 2>&1 && notify-send -i network-vpn "$1" "$2" 2>/dev/null; return 0; }
+copy_clip() { command -v xclip >/dev/null 2>&1 && printf '%s' "$1" | xclip -selection clipboard 2>/dev/null; return 0; }
+markup_esc() { printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
+
+vpn_ip() {
+  ip -4 -o addr show 2>/dev/null | awk '$2 ~ /^(tun|tap)/ { split($4, a, "/"); print a[1]; exit }'
+}
+
+vpn_pid() {
+  local pid=""
+  [ -r "$VPN_PID" ] && pid="$(cat "$VPN_PID" 2>/dev/null)"
+  if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then
+    printf '%s\n' "$pid"
+    return 0
+  fi
+  pgrep -f -- '--daemon thm-vpn' 2>/dev/null | head -n 1
+}
+
+vpn_running() { [ -n "$(vpn_pid)" ]; }
+
+find_ovpn() {
+  local d f newest=""
+  for d in "$VPN_DIR" "$HOME/Downloads" "$HOME/Pobrane" "$HOME/Desktop" "$HOME/Pulpit" "$HOME"; do
+    for f in "$d"/*.ovpn; do
+      [ -f "$f" ] || continue
+      if [ -z "$newest" ] || [ "$f" -nt "$newest" ]; then
+        newest="$f"
+      fi
+    done
+  done
+  [ -n "$newest" ] && printf '%s\n' "$newest"
+  return 0
+}
+
+vpn_start() {
+  local cfg="${1:-}"
+  [ -n "$cfg" ] || cfg="$(find_ovpn)"
+  [ -n "$cfg" ] || die "Nie znaleziono pliku .ovpn. Pobierz go z https://tryhackme.com/access i zapisz w $VPN_DIR (albo podaj ścieżkę: thm vpn plik.ovpn)."
+  [ -f "$cfg" ] || die "Plik nie istnieje: $cfg"
+  command -v openvpn >/dev/null 2>&1 || die "Brak programu openvpn (sudo apt install openvpn)."
+
+  mkdir -p "$VPN_DIR" "$THM_CFG"
+  cfg="$(readlink -f "$cfg")"
+  case "$cfg" in
+    "$(readlink -f "$VPN_DIR")"/*) ;;
+    *)
+      cp -f "$cfg" "$VPN_DIR/" || die "Nie można skopiować $cfg do $VPN_DIR"
+      cfg="$VPN_DIR/$(basename "$cfg")"
+      info "Skopiowano konfigurację do $VPN_DIR"
+      ;;
+  esac
+
+  if vpn_running; then
+    warn "VPN już działa – łączę ponownie (TryHackMe pozwala na jedno połączenie)."
+    vpn_stop quiet
+  fi
+
+  info "Łączenie z VPN TryHackMe ($(basename "$cfg"))..."
+  as_root openvpn --config "$cfg" --daemon thm-vpn \
+      --log "$VPN_LOG" --writepid "$VPN_PID" \
+      --data-ciphers 'AES-256-GCM:AES-128-GCM:CHACHA20-POLY1305:AES-256-CBC' \
+    || die "Nie udało się uruchomić openvpn."
+
+  local i ip=""
+  for i in $(seq 1 40); do
+    ip="$(vpn_ip)"
+    [ -n "$ip" ] && break
+    vpn_running || break
+    sleep 1
+  done
+
+  if [ -n "$ip" ]; then
+    printf '%s\n' "$cfg" > "$THM_CFG/last-ovpn"
+    info "Połączono! Twoje IP w sieci TryHackMe: ${B}${ip}${N}"
+    return 0
+  fi
+
+  warn "Brak adresu VPN. Ostatnie linie logu ($VPN_LOG):"
+  as_root tail -n 15 "$VPN_LOG" >&2 || true
+  vpn_stop quiet
+  die "Połączenie nieudane. Sprawdź internet i pobierz świeży plik .ovpn z tryhackme.com/access."
+}
+
+vpn_stop() {
+  local pid i
+  pid="$(vpn_pid)"
+  if [ -z "$pid" ]; then
+    [ "${1:-}" = quiet ] || info "VPN nie jest połączony."
+    return 0
+  fi
+  as_root kill "$pid" || die "Nie udało się zatrzymać openvpn (PID $pid)."
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    [ -d "/proc/$pid" ] || break
+    sleep 0.5
+  done
+  as_root rm -f "$VPN_PID" 2>/dev/null || true
+  [ "${1:-}" = quiet ] || info "Rozłączono VPN."
+}
+
+vpn_status() {
+  local pid ip
+  pid="$(vpn_pid)"
+  ip="$(vpn_ip)"
+  if [ -n "$pid" ] && [ -n "$ip" ]; then
+    echo "VPN:   ${G}połączony${N} – twoje IP: ${B}${ip}${N}"
+  elif [ -n "$pid" ]; then
+    echo "VPN:   ${Y}łączenie...${N} (openvpn działa, brak adresu)"
+  else
+    echo "VPN:   ${R}rozłączony${N}  (połącz: thm vpn)"
+  fi
+}
+
+vpn_gui() {
+  GUI=1
+  command -v zenity >/dev/null 2>&1 || die "Brak programu zenity."
+
+  if vpn_running; then
+    local ip
+    ip="$(vpn_ip)"
+    if zenity --question --title="VPN TryHackMe" --width=380 \
+         --ok-label="Rozłącz" --cancel-label="Zostaw" \
+         --text="VPN jest połączony.\nTwoje IP: <b>${ip:-brak}</b>\n\nRozłączyć?"; then
+      vpn_stop
+      notify "VPN TryHackMe" "Rozłączono."
+    fi
+    return 0
+  fi
+
+  local cfg
+  cfg="$(find_ovpn)"
+  if [ -n "$cfg" ]; then
+    zenity --question --title="VPN TryHackMe" --width=420 \
+      --ok-label="Połącz" --cancel-label="Wybierz inny plik" \
+      --text="Znaleziono plik konfiguracji:\n<b>$(markup_esc "$(basename "$cfg")")</b>\n\nPołączyć z TryHackMe?" \
+      || cfg=""
+  fi
+  if [ -z "$cfg" ]; then
+    zenity --info --title="VPN TryHackMe" --width=420 \
+      --text="Wybierz plik <b>.ovpn</b>.\n\nPobierzesz go po zalogowaniu na\n<b>tryhackme.com/access</b> → OpenVPN → Download configuration file." \
+      2>/dev/null
+    cfg="$(zenity --file-selection --title="Wybierz plik .ovpn z TryHackMe" \
+             --file-filter='OpenVPN (*.ovpn) | *.ovpn' --filename="$HOME/")" || return 0
+  fi
+
+  vpn_start "$cfg"
+  local ip
+  ip="$(vpn_ip)"
+  if [ -n "$ip" ]; then
+    copy_clip "$ip"
+    notify "VPN TryHackMe – połączono" "Twoje IP: $ip (skopiowane do schowka)"
+  fi
+}
+
+valid_ip() {
+  [[ "$1" =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]] || return 1
+  local o
+  for o in "${BASH_REMATCH[@]:1}"; do
+    [ "$((10#$o))" -le 255 ] || return 1
+  done
+}
+
+hosts_update() {
+  local line="$1" tmp
+  tmp="$(mktemp)"
+  awk -v b="$HOSTS_BEGIN" -v e="$HOSTS_END" '
+    $0 == b { skip = 1; next }
+    $0 == e { skip = 0; next }
+    !skip
+  ' /etc/hosts > "$tmp"
+  if [ -n "$line" ]; then
+    printf '%s\n%s\n%s\n' "$HOSTS_BEGIN" "$line" "$HOSTS_END" >> "$tmp"
+  fi
+  if ! cmp -s "$tmp" /etc/hosts; then
+    as_root tee /etc/hosts < "$tmp" >/dev/null || warn "Nie udało się zaktualizować /etc/hosts"
+  fi
+  rm -f "$tmp"
+}
+
+cmd_target() {
+  local cur=""
+  [ -r "$THM_CFG/target" ] && cur="$(head -n 1 "$THM_CFG/target")"
+
+  case "${1:-}" in
+    "")
+      if [ -n "$cur" ]; then
+        printf '%s\n' "$cur"
+      else
+        info "Brak celu. Ustaw go: thm target <IP> [nazwa.thm]"
+      fi
+      return 0
+      ;;
+    clear|-c|--clear)
+      rm -f "$THM_CFG/target"
+      hosts_update ""
+      info "Usunięto cel."
+      return 0
+      ;;
+  esac
+
+  local ip="$1"
+  shift
+  valid_ip "$ip" || die "To nie wygląda na adres IPv4: $ip"
+
+  local h names="target.thm"
+  for h in "$@"; do
+    [[ "$h" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]] || die "Niepoprawna nazwa hosta: $h"
+    names="$names $h"
+  done
+
+  mkdir -p "$THM_CFG"
+  printf '%s\n' "$ip" > "$THM_CFG/target"
+  hosts_update "$ip $names"
+  info "Cel: ${B}${ip}${N}  (w /etc/hosts: $names)"
+  info "W terminalu: \$TARGET i \$IP – odświeżą się przy następnym prompcie."
+}
+
+cmd_room() {
+  local name="${1:-}"
+  if [ -z "$name" ]; then
+    [ -r "$THM_CFG/room" ] && info "Bieżący pokój: $(cat "$THM_CFG/room")"
+    if [ -d "$ROOMS_DIR" ] && [ -n "$(ls -A "$ROOMS_DIR" 2>/dev/null)" ]; then
+      info "Ostatnie pokoje w $ROOMS_DIR:"
+      ls -1t "$ROOMS_DIR" | head -n 15 | sed 's/^/    /' >&2
+    else
+      info "Brak pokoi. Utwórz: thm room <nazwa-lub-link> [IP]"
+    fi
+    return 0
+  fi
+
+  local slug
+  slug="$(printf '%s' "$name" | tr '[:upper:]' '[:lower:]' \
+          | sed -E -e 's#^https?://(www\.)?tryhackme\.com/(r/)?room/##' \
+                   -e 's/[?#].*$//' -e 's/[^a-z0-9._-]+/-/g' -e 's/^-+//' -e 's/-+$//')"
+  [ -n "$slug" ] || die "Niepoprawna nazwa pokoju: $name"
+
+  local dir="$ROOMS_DIR/$slug" ip="${2:-}"
+  mkdir -p "$dir/files" "$dir/screenshots" || die "Nie można utworzyć $dir"
+
+  if [ ! -f "$dir/notes.md" ]; then
+    if [ -r "$NOTES_TEMPLATE" ]; then
+      sed -e "s|{{ROOM}}|$slug|g" \
+          -e "s|{{URL}}|https://tryhackme.com/room/$slug|g" \
+          -e "s|{{DATE}}|$(date +%Y-%m-%d)|g" \
+          -e "s|{{IP}}|${ip:-—}|g" \
+          "$NOTES_TEMPLATE" > "$dir/notes.md"
+    else
+      printf '# %s\n\n' "$slug" > "$dir/notes.md"
+    fi
+  fi
+
+  mkdir -p "$THM_CFG"
+  printf '%s\n' "$dir" > "$THM_CFG/room"
+  if [ -n "$ip" ]; then
+    shift 2
+    cmd_target "$ip" "$@"
+  fi
+  info "Pokój: ${B}${dir}${N}  (notatki: notes.md)"
+  printf '%s\n' "$dir"
+}
+
+cmd_status() {
+  local t r
+  vpn_status
+  t="$(cmd_target 2>/dev/null)"
+  r="$(cat "$THM_CFG/room" 2>/dev/null)"
+  echo "Cel:   ${t:-brak}  (ustaw: thm target <IP>)"
+  echo "Pokój: ${r:-brak}  (utwórz: thm room <nazwa>)"
+}
+
+cmd_extras() {
+  if [ $# -eq 0 ]; then
+    cat <<EOF
+Dodatkowe pakiety, których nie ma w ISO (żeby obraz był mniejszy):
+
+  seclists            duża kolekcja list słów (~2 GB po instalacji)
+  ghidra              analiza programów (reverse engineering)
+  kali-linux-default  pełny zestaw narzędzi z oficjalnego Kali (kilka GB)
+
+Instalacja (potrzebny internet):  thm extras seclists ghidra
+EOF
+    return 0
+  fi
+  local p
+  for p in "$@"; do
+    [[ "$p" =~ ^[a-z0-9][a-z0-9.+-]+$ ]] || die "Niepoprawna nazwa pakietu: $p"
+  done
+  as_root apt-get update && as_root apt-get install -y "$@"
+}
+
+cmd_help() {
+  cat <<EOF
+${B}MrRoss OS – system do nauki na TryHackMe${N}
+
+${B}PIERWSZE KROKI${N}
+  1. Zaloguj się na tryhackme.com → Access → OpenVPN → pobierz plik .ovpn
+  2. thm vpn                    połącz z VPN (sam znajdzie najnowszy plik .ovpn)
+  3. thm room <nazwa> <IP>      utwórz folder pokoju z notatkami i ustaw IP maszyny
+  4. Pracuj w ~/thm/rooms/<nazwa>, zapisuj postępy w notes.md
+
+${B}POLECENIA${N}
+  thm vpn [plik.ovpn]           połącz z VPN TryHackMe
+  thm vpn stop | status | log   rozłącz / stan / log połączenia
+  thm ip                        twoje IP w sieci THM (gdy zadanie o nie pyta)
+  thm target <IP> [nazwa.thm]   ustaw IP maszyny (+ wpis target.thm w /etc/hosts)
+  thm target clear              usuń cel
+  thm room <nazwa|link> [IP]    nowy pokój – od razu przechodzi do jego folderu
+  thm status                    VPN, cel i bieżący pokój
+  thm extras [pakiety]          doinstaluj większe pakiety (seclists, ghidra…)
+  thm help                      ta pomoc
+
+${B}W TERMINALU${N}
+  \$TARGET, \$IP   IP maszyny ustawione przez thm target
+  \$VPN_IP        twoje IP w VPN
+  Prompt pokazuje oba adresy. Panel u góry ekranu pokazuje IP VPN
+  (kliknij, by skopiować; gdy VPN jest wyłączony – kliknij, by połączyć).
+
+${B}PRZYDATNE MIEJSCA${N}
+  ~/thm/vpn                pliki .ovpn
+  ~/thm/rooms              foldery pokoi z notatkami
+  /usr/share/wordlists     listy słów (polecenie: wordlists)
+
+${B}KONTO W TRYBIE LIVE${N}   użytkownik: mrross   hasło: mrross
+${B}INFORMACJE O SYSTEMIE${N}  fastfetch
+EOF
+}
+
+help_gui() {
+  B='' N='' G='' Y='' R=''
+  cmd_help | zenity --text-info --title="MrRoss OS – pomoc" --width=760 --height=620 \
+                    --font="Monospace 10" 2>/dev/null
+  return 0
+}
+
+main() {
+  local cmd="${1:-help}"
+  [ $# -gt 0 ] && shift
+
+  case "$cmd" in
+    vpn)
+      case "${1:-}" in
+        stop|down|off|disconnect) vpn_stop ;;
+        status|st)                vpn_status ;;
+        log|logs)                 as_root tail -n "${2:-40}" "$VPN_LOG" ;;
+        start|up|on|connect)      shift; vpn_start "${1:-}" ;;
+        *)                        vpn_start "${1:-}" ;;
+      esac
+      ;;
+    vpn-gui)        vpn_gui ;;
+    ip)
+      local ip
+      ip="$(vpn_ip)"
+      [ -n "$ip" ] || die "Brak połączenia VPN (połącz: thm vpn)."
+      printf '%s\n' "$ip"
+      ;;
+    target|t)       cmd_target "$@" ;;
+    room|r)         cmd_room "$@" ;;
+    status|s)       cmd_status ;;
+    extras)         cmd_extras "$@" ;;
+    help|-h|--help) cmd_help ;;
+    help-gui)       help_gui ;;
+    *)              die "Nieznane polecenie: $cmd (zobacz: thm help)" ;;
+  esac
+}
+
+main "$@"

@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=MrRoss OS
+Description=Ekran startowy MrRoss OS
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/mrross
+ScriptFile=/usr/share/plymouth/themes/mrross/mrross.script

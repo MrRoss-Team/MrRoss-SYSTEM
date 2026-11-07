@@ -1,0 +1,13 @@
+[Icon Theme]
+Name=MrRoss
+Comment=Ikony MrRoss OS (na bazie Flat Remix)
+Inherits=Flat-Remix-Red-Dark,Flat-Remix-Blue-Dark,Adwaita,hicolor
+Example=folder
+Directories=apps/scalable
+
+[apps/scalable]
+Context=Applications
+Size=512
+MinSize=16
+MaxSize=512
+Type=Scalable

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="240" viewBox="0 0 400 240">
+  <g transform="translate(136 0)">
+    <polygon points="64,10 110.77,37 110.77,91 64,118 17.23,91 17.23,37" fill="#0d1322" stroke="#e5383b" stroke-width="7" stroke-linejoin="round"/>
+    <polyline points="43,46 62,64 43,82" fill="none" stroke="#f2f4f8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="70" y1="82" x2="87" y2="82" stroke="#e5383b" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <text x="200" y="196" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="46" letter-spacing="1"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b"> OS</tspan></text>
+</svg>

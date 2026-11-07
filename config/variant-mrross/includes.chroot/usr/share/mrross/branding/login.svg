@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#070b15"/>
+      <stop offset="1" stop-color="#121b2e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="960" cy="540" r="700" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e5383b" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#e5383b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="fade" cx="960" cy="540" r="900" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="hc" width="48.5" height="84" patternUnits="userSpaceOnUse">
+      <path d="M24.25 0L48.5 14V42L24.25 56L0 42V14Z M24.25 56V84" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+    <mask id="m">
+      <rect width="1920" height="1080" fill="url(#fade)"/>
+    </mask>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <rect width="1920" height="1080" fill="url(#hc)" mask="url(#m)"/>
+  <rect width="1920" height="1080" fill="url(#glow)"/>
+  <g transform="translate(936 926) scale(0.375)">
+    <polygon points="64,10 110.77,37 110.77,91 64,118 17.23,91 17.23,37" fill="#0d1322" stroke="#e5383b" stroke-width="9" stroke-linejoin="round"/>
+    <polyline points="43,46 62,64 43,82" fill="none" stroke="#f2f4f8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="70" y1="82" x2="87" y2="82" stroke="#e5383b" stroke-width="9" stroke-linecap="round"/>
+  </g>
+  <text x="960" y="1010" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="26" letter-spacing="1"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b"> OS</tspan></text>
+</svg>

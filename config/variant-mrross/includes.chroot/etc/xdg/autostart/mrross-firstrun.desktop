@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=MrRoss OS – pierwsze uruchomienie
+Comment=Tworzy foldery ~/thm i ikony na pulpicie (tylko raz)
+Exec=/usr/local/bin/thm-firstrun
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

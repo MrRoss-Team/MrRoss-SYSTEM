@@ -1,0 +1,57 @@
+#!/bin/sh
+
+LIVE_USER=mrross
+LIVE_PASS=mrross
+
+configure_zsh() {
+    if echo "${LIVE_CONFIG_CMDLINE}" | grep -q 'nozsh'; then
+        echo "INFO: user opted out of zsh by default"
+        return
+    fi
+    if [ ! -x /usr/bin/zsh ]; then
+        echo "INFO: /usr/bin/zsh is not available"
+        return
+    fi
+    echo "INFO: changing default shell of user '$LIVE_USER' to zsh"
+    chsh --shell /usr/bin/zsh "$LIVE_USER"
+}
+
+configure_usergroups() {
+    addgroup --system kaboxer || true
+    addgroup --system wireshark || true
+
+    groups="adm dialout kaboxer vboxsf wireshark"
+    echo "INFO: adding user '$LIVE_USER' to groups '$groups'"
+    for grp in $groups; do
+        getent group "$grp" >/dev/null || continue
+        usermod -a -G "$grp" "$LIVE_USER"
+    done
+}
+
+pkg_installed() {
+    dpkg -s "$1" 2>/dev/null | grep -q "ok installed"
+}
+
+configure_terminal() {
+    if pkg_installed kali-desktop-xfce; then
+        echo "INFO: setting x-terminal-emulator alternative to 'qterminal'"
+        update-alternatives --verbose --set x-terminal-emulator /usr/bin/qterminal || true
+    fi
+}
+
+if [ -e /var/lib/live/config/kali-user-setup ]; then
+    exit 0
+fi
+
+if ! getent passwd "$LIVE_USER" >/dev/null; then
+    echo "WARNING: user '$LIVE_USER' does not exist"
+    exit 0
+fi
+
+echo "$LIVE_USER:$LIVE_PASS" | chpasswd
+
+configure_zsh
+configure_usergroups
+configure_terminal
+
+touch /var/lib/live/config/kali-user-setup

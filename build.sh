@@ -7,8 +7,8 @@ SRC_DIR="${SRC_DIR:-$HERE}"
 KALI_LB_REPO="${KALI_LB_REPO:-https://gitlab.com/kalilinux/build-scripts/live-build-config.git}"
 KALI_LB_REF="${KALI_LB_REF:-adb2e38941662f105b57134e0155ec468da294ad}"
 
-VARIANT="tryhackme"
-LIVE_HOSTNAME="${LIVE_HOSTNAME:-hackbox}"
+VARIANT="mrross"
+LIVE_HOSTNAME="${LIVE_HOSTNAME:-mrross}"
 VERSION="${VERSION:-$( date -u +%Y.%m.%d )}"
 OUT_DIR="${OUT_DIR:-$SRC_DIR/output}"
 WORK_DIR="${WORK_DIR:-}"
@@ -20,22 +20,22 @@ if [ -t 1 ]; then
 else
   C_G='' C_Y='' C_R='' C_B='' C_N=''
 fi
-info() { printf '%s[HackBox]%s %s\n' "$C_G" "$C_N" "$*"; }
-warn() { printf '%s[HackBox]%s %s\n' "$C_Y" "$C_N" "$*" >&2; }
-die()  { printf '%s[HackBox] BŁĄD:%s %s\n' "$C_R" "$C_N" "$*" >&2; exit 1; }
+info() { printf '%s[MrRoss OS]%s %s\n' "$C_G" "$C_N" "$*"; }
+warn() { printf '%s[MrRoss OS]%s %s\n' "$C_Y" "$C_N" "$*" >&2; }
+die()  { printf '%s[MrRoss OS] BŁĄD:%s %s\n' "$C_R" "$C_N" "$*" >&2; exit 1; }
 
 usage() {
   cat <<EOF
 Użycie: $0 [opcje]
 
-Buduje obraz ISO HackBox (Kali Linux dla TryHackMe).
+Buduje obraz ISO MrRoss OS (system na bazie Kali Linux do nauki na TryHackMe).
 
 Opcje:
   -o, --output DIR      katalog na gotowe ISO (domyślnie: ./output)
   -w, --work-dir DIR    katalog roboczy budowania (domyślnie: wolumen Dockera
-                        "hackbox-work"; w trybie --native: ./.work)
+                        "mrross-work"; w trybie --native: ./.work)
   -x, --version VER     wersja w nazwie pliku (domyślnie: dzisiejsza data)
-  -H, --hostname NAME   nazwa hosta systemu live (domyślnie: hackbox)
+  -H, --hostname NAME   nazwa hosta systemu live (domyślnie: mrross)
       --kali-ref REF    commit skryptów Kali albo "latest"
       --native          buduj bez Dockera (wymaga Kali Linux i roota)
   -h, --help            ta pomoc
@@ -82,7 +82,7 @@ run_docker() {
   mkdir -p "$OUT_DIR"
   OUT_DIR="$( cd "$OUT_DIR" && pwd )"
 
-  local work="${WORK_DIR:-hackbox-work}"
+  local work="${WORK_DIR:-mrross-work}"
   if [[ "$work" == */* ]]; then
     mkdir -p "$work"
     work="$( cd "$work" && pwd )"
@@ -94,10 +94,10 @@ run_docker() {
   "${docker[@]}" pull "$BUILDER_IMAGE"
 
   "${docker[@]}" run --rm --privileged \
-    --volume "$SRC_DIR:/hackbox:ro" \
+    --volume "$SRC_DIR:/mrross:ro" \
     --volume "$work:/work" \
     --volume "$OUT_DIR:/out" \
-    --env SRC_DIR=/hackbox \
+    --env SRC_DIR=/mrross \
     --env VERSION="$VERSION" \
     --env LIVE_HOSTNAME="$LIVE_HOSTNAME" \
     --env KALI_LB_REPO="$KALI_LB_REPO" \
@@ -105,7 +105,7 @@ run_docker() {
     --env HOST_UID="${SUDO_UID:-$( id -u )}" \
     --env HOST_GID="${SUDO_GID:-$( id -g )}" \
     "$BUILDER_IMAGE" \
-    bash -c "tr -d '\r' < /hackbox/build.sh > /tmp/hackbox-build.sh && exec bash /tmp/hackbox-build.sh --native --work-dir /work --output /out"
+    bash -c "tr -d '\r' < /mrross/build.sh > /tmp/mrross-build.sh && exec bash /tmp/mrross-build.sh --native --work-dir /work --output /out"
 }
 
 safe_umount() {
@@ -117,16 +117,46 @@ safe_umount() {
 }
 
 install_deps() {
-  if command -v lb >/dev/null 2>&1 && command -v git >/dev/null 2>&1 && command -v wget >/dev/null 2>&1; then
+  if command -v lb >/dev/null 2>&1 && command -v git >/dev/null 2>&1 && command -v wget >/dev/null 2>&1 \
+     && command -v rsvg-convert >/dev/null 2>&1 && fc-list 2>/dev/null | grep -qi cantarell; then
     return 0
   fi
   grep -qi '^ID=kali' /etc/os-release 2>/dev/null \
     || warn "To nie jest Kali – skrypty Kali wymagają live-build z repozytorium Kali. Najprościej użyć trybu Docker."
-  info "Instaluję narzędzia do budowania (live-build, git)..."
+  info "Instaluję narzędzia do budowania (live-build, git, rsvg-convert, czcionki)..."
   export DEBIAN_FRONTEND=noninteractive
   apt-get update
   apt-get install -y --no-install-recommends \
-    apt-utils ca-certificates git live-build wget xz-utils
+    apt-utils ca-certificates git live-build wget xz-utils \
+    librsvg2-bin fontconfig fonts-cantarell fonts-dejavu-core
+}
+
+render_bootloader_art() {
+  local v="$1" b g
+  b="$v/includes.chroot/usr/share/mrross/branding"
+  g="$v/bootloaders/grub-pc"
+  command -v rsvg-convert >/dev/null 2>&1 || die "Brak rsvg-convert (pakiet librsvg2-bin)."
+  info "Renderuję grafiki menu startowego..."
+  mkdir -p "$v/includes.binary/isolinux" "$g/theme"
+  rsvg-convert -w 640 -h 480 -o "$v/includes.binary/isolinux/splash.png" "$b/isolinux.svg"
+  rsvg-convert -w 1024 -h 768 -o "$g/splash.png" "$b/grub.svg"
+  rsvg-convert -w 8 -h 36 -o "$g/theme/select_c.png" "$b/grub-select-c.svg"
+  rsvg-convert -w 5 -h 36 -o "$g/theme/select_w.png" "$b/grub-select-w.svg"
+  rsvg-convert -w 5 -h 36 -o "$g/theme/select_e.png" "$b/grub-select-e.svg"
+}
+
+patch_kali_config() {
+  local cfg="$1/auto/config"
+  sed -i \
+    -e 's/--iso-application "Kali Linux"/--iso-application "MrRoss OS"/' \
+    -e 's/--iso-publisher "Kali"/--iso-publisher "MrRoss-Team"/' \
+    -e 's/--iso-volume "Kali Live"/--iso-volume "MrRoss OS"/' \
+    "$cfg"
+  if grep -q -- '--iso-volume "MrRoss OS"' "$cfg"; then
+    info "Etykieta płyty: MrRoss OS"
+  else
+    warn "Nie udało się zmienić etykiety płyty w auto/config – zostaje Kali Live."
+  fi
 }
 
 fetch_kali_config() {
@@ -165,11 +195,17 @@ apply_overlay() {
     while IFS= read -r f; do sed -i 's/\r$//' "$f"; done <<< "$crlf_files"
   fi
 
+  printf '%s\n' "$VERSION" > "$v/includes.chroot/etc/mrross-version"
+  render_bootloader_art "$v"
+
   chown -R root:root "$v"
   find "$v" -type d -exec chmod 0755 {} +
   find "$v" -type f -exec chmod 0644 {} +
   [ -d "$v/hooks" ] && find "$v/hooks" -type f -exec chmod 0755 {} +
   [ -d "$v/includes.chroot/usr/local/bin" ] && find "$v/includes.chroot/usr/local/bin" -type f -exec chmod 0755 {} +
+  [ -d "$v/includes.chroot/usr/lib/live/config" ] && find "$v/includes.chroot/usr/lib/live/config" -type f -exec chmod 0755 {} +
+
+  patch_kali_config "$dst"
   return 0
 }
 
@@ -200,7 +236,7 @@ run_native() {
   local iso name
   iso="$( find "$kout" -maxdepth 1 -type f -name '*.iso' | head -n 1 || true )"
   [ -n "$iso" ] || die "Budowanie zakończone, ale nie znaleziono pliku ISO w $kout"
-  name="hackbox-thm-${VERSION}-amd64.iso"
+  name="mrross-os-${VERSION}-amd64.iso"
 
   info "Kopiuję ISO do $OUT_DIR/$name ..."
   cp -f "$iso" "$OUT_DIR/$name"

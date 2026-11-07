@@ -1,0 +1,37 @@
+#!/bin/sh
+CFG="${XDG_CONFIG_HOME:-$HOME/.config}/thm"
+mkdir -p "$CFG" "$HOME/thm/vpn" "$HOME/thm/rooms"
+[ -e "$CFG/.firstrun-done" ] && exit 0
+
+desk="$(xdg-user-dir DESKTOP 2>/dev/null)"
+[ -n "$desk" ] && [ "$desk" != "$HOME" ] || desk="$HOME/Desktop"
+mkdir -p "$desk"
+
+for app in mrross-vpn mrross-tryhackme mrross-help; do
+    src="/usr/share/applications/$app.desktop"
+    dst="$desk/$app.desktop"
+    [ -f "$src" ] || continue
+    cp -f "$src" "$dst"
+    chmod +x "$dst"
+    if command -v gio >/dev/null 2>&1; then
+        gio set -t string "$dst" metadata::xfce-exe-checksum \
+            "$(sha256sum "$dst" | cut -d' ' -f1)" 2>/dev/null || true
+    fi
+done
+
+touch "$CFG/.firstrun-done"
+
+if command -v zenity >/dev/null 2>&1; then
+    sleep 3
+    zenity --info --title="Witaj w MrRoss OS" --width=480 --text="<b>MrRoss OS – system do nauki na TryHackMe</b>
+
+1. Pobierz plik <b>.ovpn</b> z tryhackme.com/access
+2. Kliknij ikonę <b>VPN TryHackMe</b> na pulpicie
+   (albo w terminalu: <tt>thm vpn</tt>)
+3. Uruchom maszynę w pokoju i wpisz w terminalu:
+   <tt>thm room nazwa-pokoju IP-maszyny</tt>
+
+Pomoc: <tt>thm help</tt> lub ikona <b>Pomoc MrRoss OS</b>.
+Konto live: mrross / mrross" 2>/dev/null &
+fi
+exit 0

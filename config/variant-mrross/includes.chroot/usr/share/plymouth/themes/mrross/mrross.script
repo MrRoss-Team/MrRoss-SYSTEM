@@ -1,0 +1,66 @@
+Window.SetBackgroundTopColor(0.020, 0.031, 0.059);
+Window.SetBackgroundBottomColor(0.075, 0.110, 0.188);
+
+scr.w = Window.GetWidth();
+scr.h = Window.GetHeight();
+scr.cx = Window.GetX() + scr.w / 2;
+scr.cy = Window.GetY() + scr.h / 2;
+
+logo.image = Image("logo.png");
+if (scr.h < 700) {
+    logo.image = logo.image.Scale(logo.image.GetWidth() * 0.7, logo.image.GetHeight() * 0.7);
+}
+logo.x = scr.cx - logo.image.GetWidth() / 2;
+logo.y = scr.cy - logo.image.GetHeight() / 2 - 40;
+logo.sprite = Sprite(logo.image);
+logo.sprite.SetPosition(logo.x, logo.y, 10);
+
+bar.w = 220;
+bar.h = 4;
+bar.x = scr.cx - bar.w / 2;
+bar.y = logo.y + logo.image.GetHeight() + 36;
+track.sprite = Sprite(Image("track.png").Scale(bar.w, bar.h));
+track.sprite.SetPosition(bar.x, bar.y, 10);
+seg.w = 56;
+seg.sprite = Sprite(Image("bar.png").Scale(seg.w, bar.h));
+seg.sprite.SetPosition(bar.x, bar.y, 11);
+
+phase = 0;
+
+fun refresh_callback() {
+    global.phase = global.phase + 0.05;
+    seg.sprite.SetX(bar.x + (bar.w - seg.w) * (Math.Sin(global.phase) + 1) / 2);
+}
+
+fun message_callback(text) {
+    m.image = Image.Text(text, 0.85, 0.88, 0.93);
+    m.sprite = Sprite(m.image);
+    m.sprite.SetPosition(scr.cx - m.image.GetWidth() / 2, bar.y + 40, 20);
+    global.message = m;
+}
+
+fun password_callback(prompt, bullets) {
+    p.label = Image.Text(prompt, 0.95, 0.96, 0.98);
+    p.label_sprite = Sprite(p.label);
+    p.label_sprite.SetPosition(scr.cx - p.label.GetWidth() / 2, bar.y + 70, 30);
+    stars = "";
+    for (i = 0; i < bullets && i < 32; i++) {
+        stars = stars + "*";
+    }
+    if (stars == "") {
+        stars = "_";
+    }
+    p.dots = Image.Text(stars, 0.898, 0.220, 0.231);
+    p.dots_sprite = Sprite(p.dots);
+    p.dots_sprite.SetPosition(scr.cx - p.dots.GetWidth() / 2, bar.y + 100, 30);
+    global.password = p;
+}
+
+fun normal_callback() {
+    global.password = NULL;
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+Plymouth.SetMessageFunction(message_callback);
+Plymouth.SetDisplayPasswordFunction(password_callback);
+Plymouth.SetDisplayNormalFunction(normal_callback);

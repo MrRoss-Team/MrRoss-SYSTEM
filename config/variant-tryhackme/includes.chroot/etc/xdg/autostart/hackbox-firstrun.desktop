@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=HackBox – pierwsze uruchomienie
-Comment=Tworzy foldery ~/thm i ikony na pulpicie (tylko raz)
-Exec=/usr/local/bin/thm-firstrun
-Terminal=false
-NoDisplay=true
-X-GNOME-Autostart-enabled=true

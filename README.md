@@ -1,50 +1,46 @@
-# HackBox – system do nauki na TryHackMe
+# MrRoss OS – system do nauki na TryHackMe
 
-HackBox to obraz ISO oparty na **Kali Linux** (oficjalne skrypty budowania Kali),
-przygotowany pod naukę na [TryHackMe](https://tryhackme.com). Uruchamiasz go
-w maszynie wirtualnej albo z pendrive'a, łączysz się z VPN jednym kliknięciem
+MrRoss OS to własna dystrybucja Linuksa do nauki na [TryHackMe](https://tryhackme.com),
+zbudowana na bazie **Kali Linux** w taki sam sposób, jak Parrot HTB powstał z Parrota:
+ta sama sprawdzona baza i narzędzia, ale z własną nazwą, wyglądem i dodatkami pod jedną platformę.
+Uruchamiasz go w maszynie wirtualnej albo z pendrive'a, łączysz się z VPN jednym kliknięciem
 i masz porządek w notatkach z każdego pokoju.
 
 **Gotowe ISO do pobrania:** zakładka [Releases](https://github.com/MrRoss-Team/MrRoss-SYSTEM/releases)
 (pobierz wszystkie pliki `.part*`, `.sha256` i `join-iso.ps1`, potem uruchom `.\join-iso.ps1`).
 
-> Projekt nieoficjalny – nie jest powiązany z TryHackMe ani z OffSec (Kali Linux).
+> Projekt niezależny – nie jest powiązany z TryHackMe ani z OffSec (Kali Linux).
+> MrRoss OS jest następcą HackBoxa.
 
 ## Co jest w środku
 
 | Element | Opis |
 |---|---|
-| Baza | Kali Linux (rolling), pulpit Xfce, tryb live + instalator |
-| Narzędzia | `kali-tools-top10` + narzędzia używane w pokojach THM (lista: [`kali.list.chroot`](config/variant-tryhackme/package-lists/kali.list.chroot)) |
+| Baza | Kali Linux (rolling): pakiety, aktualizacje i narzędzia z repozytorium Kali; pulpit Xfce, tryb live + instalator |
+| Wygląd | własne logo, menu startowe (BIOS i UEFI), ekran ładowania, ekran logowania, tapeta, motyw `MrRoss-Dark`, ikony `MrRoss`, kolory terminala |
+| Tożsamość | `/etc/os-release` = MrRoss OS, nazwa hosta `mrross`, użytkownik live `mrross`, etykieta płyty `MrRoss OS` |
+| Narzędzia | `kali-tools-top10` + narzędzia używane w pokojach THM (lista: [`kali.list.chroot`](config/variant-mrross/package-lists/kali.list.chroot)) |
 | VPN jednym kliknięciem | ikona **VPN TryHackMe** na pulpicie albo `thm vpn` – sama znajduje najnowszy plik `.ovpn` |
 | Panel | u góry ekranu: Twoje IP w VPN i IP maszyny (`10.8.0.5 → 10.10.1.2`), klik = kopiuj; gdy VPN jest wyłączony – klik = połącz |
-| Terminal | prompt pokazuje IP VPN i celu, zmienne `$TARGET`, `$IP`, `$VPN_IP` |
+| Terminal | prompt MrRoss z IP VPN i celu, zmienne `$TARGET`, `$IP`, `$VPN_IP`; `fastfetch` pokazuje logo i dane systemu |
 | Pokoje | `thm room <nazwa> <IP>` tworzy `~/thm/rooms/<nazwa>/` z szablonem `notes.md` i ustawia cel |
-| Firefox | strona startowa TryHackMe + pasek zakładek (THM, CyberChef, ExplainShell, Kali Docs, OWASP) |
-| Wygląd | własna tapeta, nazwa hosta `hackbox` |
+| Firefox | strona startowa TryHackMe + zakładki (THM, CyberChef, GTFOBins, RevShells, HackTricks, ExplainShell, OWASP) |
 
-Logowanie w trybie live: **kali / kali**.
+Logowanie w trybie live: **mrross / mrross**.
 
 ## Budowanie ISO
 
 Budowanie pobiera ok. 3 GB pakietów i potrzebuje **ok. 30 GB wolnego miejsca**
-oraz 30–90 minut. Wynik to plik `hackbox-thm-<wersja>-amd64.iso` (ok. 3–4 GB).
+oraz 30–90 minut. Wynik to plik `mrross-os-<wersja>-amd64.iso` (ok. 4 GB).
 
 ### Opcja A: GitHub Actions (nie zajmuje miejsca na Twoim dysku) – zalecana
 
-1. Utwórz na GitHubie nowe repozytorium (może być prywatne) i wyślij do niego ten folder:
-   ```bash
-   git init && git add . && git commit -m "HackBox"
-   ```
-   ```bash
-   git branch -M main && git remote add origin https://github.com/<login>/hackbox.git && git push -u origin main
-   ```
-2. Budowanie startuje samo po wypchnięciu (albo ręcznie: **Actions → Zbuduj ISO HackBox → Run workflow**).
-   Kolejne budowania uruchamiają się po każdej zmianie w `config/` lub `build.sh`.
-3. Po ok. godzinie wejdź w zakładkę **Releases** i pobierz do jednego folderu wszystkie pliki
+1. Wypchnij zmiany do repozytorium na GitHubie. Budowanie startuje samo po każdej zmianie
+   w `config/` lub `build.sh` (albo ręcznie: **Actions → Zbuduj ISO MrRoss OS → Run workflow**).
+2. Po ok. 30 minutach wejdź w zakładkę **Releases** i pobierz do jednego folderu wszystkie pliki
    `.iso.part00`, `.part01`…, plik `.sha256` i `join-iso.ps1`.
    GitHub nie przyjmuje plików powyżej 2 GB, dlatego ISO jest pocięte.
-4. Sklej części w PowerShellu:
+3. Sklej części w PowerShellu:
    ```powershell
    .\join-iso.ps1
    ```
@@ -52,8 +48,7 @@ oraz 30–90 minut. Wynik to plik `hackbox-thm-<wersja>-amd64.iso` (ok. 3–4 GB
    plików potrzebuje tylko ~2 GB wolnego miejsca; części usuwa po dopisaniu (zachowasz je opcją `-KeepParts`).
    Przerwane sklejanie wystarczy uruchomić ponownie – skrypt je wznowi.
 
-Wersja z numerem: wypchnij tag, np. `git tag v1.0 && git push --tags`.
-W repozytorium publicznym minuty Actions są bez limitu, w prywatnym darmowe konto ma 2000 minut miesięcznie (jedno budowanie to ok. 60–90 minut).
+Wersja z numerem: wypchnij tag, np. `git tag v2.0 && git push --tags`.
 
 ### Opcja B: Windows + Docker Desktop
 
@@ -65,9 +60,9 @@ W repozytorium publicznym minuty Actions są bez limitu, w prywatnym darmowe kon
    .\build.ps1
    ```
    Gotowe ISO trafi do `output\`. Inny katalog: `.\build.ps1 -Output D:\iso`.
-   Po budowaniu możesz odzyskać miejsce: `docker volume rm hackbox-work`.
+   Po budowaniu możesz odzyskać miejsce: `docker volume rm mrross-work`.
 
-> Uwaga: ten folder leży na OneDrive – ISO w `output\` zacznie się synchronizować z chmurą.
+> Uwaga: jeśli ten folder leży na OneDrive, ISO w `output\` zacznie się synchronizować z chmurą.
 > Lepiej podać `-Output` poza OneDrive.
 
 ### Opcja C: Linux
@@ -86,8 +81,8 @@ podłącz ISO jako napęd optyczny i uruchom → *Live system*. Żeby zachować 
 wybierz w menu startowym *Start installer* i zainstaluj system na dysku wirtualnym (min. 30 GB).
 
 **Pendrive:** zapisz ISO np. programem [Rufus](https://rufus.ie) (tryb *DD Image*) albo
-[balenaEtcher](https://etcher.balena.io). Pendrive z trwałym zapisem (persistence):
-[instrukcja Kali](https://www.kali.org/docs/usb/usb-persistence/).
+[balenaEtcher](https://etcher.balena.io). Pendrive z trwałym zapisem (persistence) przygotowuje się
+tak samo jak dla Kali: [instrukcja](https://www.kali.org/docs/usb/usb-persistence/).
 
 ## Praca z TryHackMe
 
@@ -99,22 +94,27 @@ thm target 10.10.y.y nazwa.thm  # nowy IP maszyny (np. po restarcie) + wpis w /e
 thm ip                          # Twoje IP w VPN (gdy zadanie o nie pyta)
 thm vpn stop                    # rozłącz
 thm extras seclists             # doinstaluj większe pakiety
+fastfetch                       # logo i informacje o systemie
 thm help                        # ściąga
 ```
 
 Prompt w terminalu wygląda tak:
 
 ```
-┌──(10.8.0.5→10.10.1.2)─(kali㉿hackbox)-[~/thm/rooms/nazwa-pokoju]
+┌──[10.8.0.5→10.10.1.2]─[mrross@mrross]─[~/thm/rooms/nazwa-pokoju]
 └─$
 ```
 
 ## Dostosowanie
 
-- **Inne pakiety** – edytuj [`config/variant-tryhackme/package-lists/kali.list.chroot`](config/variant-tryhackme/package-lists/kali.list.chroot)
+- **Inne pakiety** – edytuj [`config/variant-mrross/package-lists/kali.list.chroot`](config/variant-mrross/package-lists/kali.list.chroot)
   (nazwy z [kali.org/tools](https://www.kali.org/tools/)). Pełny zestaw narzędzi Kali: dopisz `kali-linux-default`.
-- **Pliki w systemie** – wszystko w `config/variant-tryhackme/includes.chroot/` trafia 1:1 do obrazu.
-- **Konfiguracja przy budowaniu** – [`hooks/live/hackbox.chroot`](config/variant-tryhackme/hooks/live/hackbox.chroot).
+- **Grafika** – źródła SVG (logo, tapeta, menu startowe, ekran ładowania) są w
+  [`includes.chroot/usr/share/mrross/branding/`](config/variant-mrross/includes.chroot/usr/share/mrross/branding).
+  Pliki PNG powstają z nich automatycznie podczas budowania.
+- **Pliki w systemie** – wszystko w `config/variant-mrross/includes.chroot/` trafia 1:1 do obrazu.
+- **Menu startowe** – `config/variant-mrross/bootloaders/` (GRUB dla UEFI, isolinux dla BIOS).
+- **Konfiguracja przy budowaniu** – [`hooks/live/0100-mrross.chroot`](config/variant-mrross/hooks/live/0100-mrross.chroot).
 - **Nowsze skrypty Kali** – `./build.sh --kali-ref latest` (domyślnie przypięty sprawdzony commit).
 
 ## Struktura projektu
@@ -124,12 +124,19 @@ build.sh                     budowanie (Linux / GitHub Actions / w kontenerze)
 build.ps1                    budowanie na Windows (Docker Desktop)
 join-iso.ps1                 sklejanie części ISO z GitHuba
 .github/workflows/           automatyczne budowanie w GitHub Actions
-config/variant-tryhackme/
+config/variant-mrross/
   package-lists/             lista pakietów
-  hooks/live/                konfiguracja w trakcie budowania
+  bootloaders/               menu startowe GRUB (UEFI) i isolinux (BIOS)
+  includes.binary/           pliki na płycie (wygląd menu BIOS)
+  hooks/live/                nadawanie tożsamości MrRoss w trakcie budowania
   includes.chroot/           pliki kopiowane do systemu:
     usr/local/bin/thm          polecenie thm
     usr/local/bin/thm-panel    wskaźnik VPN/celu w panelu
-    etc/thm/                   integracja z zsh/bash
-    usr/share/hackbox/         szablon notatek, zakładki Firefoksa
+    etc/thm/                   integracja z zsh/bash (prompt MrRoss)
+    usr/share/mrross/          grafika, logo fastfetch, szablon notatek, zakładki Firefoksa
+    usr/share/plymouth/        ekran ładowania
+    usr/lib/live/config/       konto live mrross
 ```
+
+Motyw `MrRoss-Dark` powstaje z motywu Kali-Red-Dark, a ikony `MrRoss` dziedziczą po Flat Remix.
+Oba projekty są na licencji GPL.

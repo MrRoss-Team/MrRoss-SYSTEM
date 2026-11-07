@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#05080f"/>
+      <stop offset="0.55" stop-color="#0b1220"/>
+      <stop offset="1" stop-color="#131c30"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="1300" cy="470" r="640" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e5383b" stop-opacity="0.22"/>
+      <stop offset="0.6" stop-color="#e5383b" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#e5383b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="fade" cx="1300" cy="470" r="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="hc" width="48.5" height="84" patternUnits="userSpaceOnUse">
+      <path d="M24.25 0L48.5 14V42L24.25 56L0 42V14Z M24.25 56V84" fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+    <mask id="m">
+      <rect width="1920" height="1080" fill="url(#fade)"/>
+    </mask>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <rect width="1920" height="1080" fill="url(#hc)" mask="url(#m)"/>
+  <rect width="1920" height="1080" fill="url(#glow)"/>
+  <circle cx="1300" cy="470" r="300" fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="1.5"/>
+  <circle cx="1300" cy="470" r="252" fill="none" stroke="#e5383b" stroke-opacity="0.45" stroke-width="2.5" stroke-dasharray="3 13"/>
+  <g transform="translate(1108 278) scale(3)">
+    <polygon points="64,10 110.77,37 110.77,91 64,118 17.23,91 17.23,37" fill="#0b1120" fill-opacity="0.92" stroke="#e5383b" stroke-width="6" stroke-linejoin="round"/>
+    <polyline points="43,46 62,64 43,82" fill="none" stroke="#f2f4f8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="70" y1="82" x2="87" y2="82" stroke="#e5383b" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <text x="1300" y="862" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="92" letter-spacing="2"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b"> OS</tspan></text>
+  <text x="1300" y="914" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="22" letter-spacing="7" fill="#8a96ad">SYSTEM DO NAUKI NA TRYHACKME</text>
+  <text x="1300" y="1036" text-anchor="middle" font-family="Fira Code, DejaVu Sans Mono, monospace" font-size="18" fill="#4b5870">mrross / mrross  ·  thm help</text>
+</svg>

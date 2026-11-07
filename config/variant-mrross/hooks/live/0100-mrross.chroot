@@ -1,0 +1,234 @@
+#!/bin/sh
+set -u
+
+log()  { echo "I: mrross: $*"; }
+warn() { echo "W: mrross: $*" >&2; }
+
+divert() {
+    [ -e "$1" ] || [ -L "$1" ] || return 1
+    dpkg-divert --local --rename --add --divert "$1.kali" "$1" >/dev/null
+}
+
+render() {
+    command -v rsvg-convert >/dev/null 2>&1 || return 1
+    rsvg-convert "$@"
+}
+
+png_size() {
+    python3 -c 'import struct, sys; d = open(sys.argv[1], "rb").read(24); print(*struct.unpack(">II", d[16:24]))' "$1"
+}
+
+set_xml_prop() {
+    sed -i "s|\(<property name=\"$2\" type=\"string\" value=\"\)[^\"]*\"|\1$3\"|" "$1"
+    if grep -q "<property name=\"$2\" type=\"string\" value=\"$3\"" "$1"; then
+        log "$(basename "$1"): $2 = $3"
+    else
+        warn "$(basename "$1"): nie udało się ustawić $2"
+    fi
+}
+
+B=/usr/share/mrross/branding
+VER="$(head -n 1 /etc/mrross-version 2>/dev/null | tr -cd 'A-Za-z0-9._-')"
+[ -n "$VER" ] || VER="dev"
+
+for f in thm thm-panel thm-firstrun thm-askpass; do
+    [ -f "/usr/local/bin/$f" ] && chmod 0755 "/usr/local/bin/$f"
+done
+[ -f /usr/lib/live/config/0031-kali-user-setup ] && chmod 0755 /usr/lib/live/config/0031-kali-user-setup
+
+for rc in /etc/skel/.zshrc /etc/skel/.bashrc /root/.zshrc /root/.bashrc; do
+    [ -f "$rc" ] || continue
+    grep -q '/etc/thm/shell.rc' "$rc" && continue
+    printf '\n[ -r /etc/thm/shell.rc ] && . /etc/thm/shell.rc\n' >> "$rc"
+    log "dodano /etc/thm/shell.rc do $rc"
+done
+mkdir -p /etc/skel/thm/vpn /etc/skel/thm/rooms
+
+K=/usr/share/kali-themes/xfce4-panel-genmon-vpnip.sh
+if divert "$K"; then
+    ln -sf /usr/local/bin/thm-panel "$K"
+    log "panel: wskaźnik VPN zastąpiony przez thm-panel"
+else
+    warn "nie znaleziono $K – pomijam panel"
+fi
+
+command -v rsvg-convert >/dev/null 2>&1 || warn "brak rsvg-convert – grafiki MrRoss nie zostaną wygenerowane"
+
+W=/usr/share/backgrounds/mrross
+mkdir -p "$W"
+if render -w 1920 -h 1080 -o "$W/mrross.png" "$B/wallpaper.svg"; then
+    D=/usr/share/backgrounds/kali-16x9/default
+    if divert "$D"; then
+        ln -sf "$W/mrross.png" "$D"
+        log "ustawiono tapetę MrRoss"
+    else
+        warn "nie znaleziono $D – zostaje tapeta Kali"
+    fi
+else
+    warn "nie udało się wyrenderować tapety"
+fi
+render -w 1920 -h 1080 -o "$W/login.png" "$B/login.svg" && log "tło ekranu logowania gotowe" \
+    || warn "nie udało się wyrenderować tła logowania"
+
+I=/usr/share/icons/MrRoss/apps/scalable
+H=/usr/share/icons/hicolor/scalable/apps
+mkdir -p "$I" "$H"
+for n in mrross-logo mrross-menu kali-menu kali-panel-menu kali-panel-menu-large; do
+    cp -f "$B/logo.svg" "$I/$n.svg"
+done
+cp -f "$B/logo.svg" "$H/mrross-logo.svg"
+cp -f "$B/logo.svg" "$H/mrross-menu.svg"
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -q -f /usr/share/icons/MrRoss || true
+    gtk-update-icon-cache -q -f /usr/share/icons/hicolor || true
+fi
+log "ikony MrRoss gotowe"
+
+T=/usr/share/themes
+if [ -d "$T/Kali-Red-Dark" ]; then
+    rm -rf "$T/MrRoss-Dark"
+    cp -rL "$T/Kali-Red-Dark" "$T/MrRoss-Dark"
+    cat > "$T/MrRoss-Dark/index.theme" <<'EOF'
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=MrRoss-Dark
+Comment=Ciemny motyw MrRoss OS (na bazie Kali-Red-Dark)
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=MrRoss-Dark
+MetacityTheme=MrRoss-Dark
+IconTheme=MrRoss
+CursorTheme=Adwaita
+EOF
+    n=0
+    for f in $(find "$T/MrRoss-Dark" -name 'kali-headerbar-logo*.png'); do
+        size="$(png_size "$f" 2>/dev/null)" || continue
+        w="${size% *}"
+        h="${size#* }"
+        render -w "$w" -h "$h" -o "$f" "$B/headerbar.svg" && n=$((n + 1))
+    done
+    log "motyw MrRoss-Dark gotowy (podmieniono logo w pasku tytułu: $n)"
+else
+    warn "brak motywu Kali-Red-Dark – zostaje motyw Kali"
+fi
+
+X=/etc/xdg/xfce4/xfconf/xfce-perchannel-xml
+if [ -d "$T/MrRoss-Dark" ]; then
+    [ -f "$X/xsettings.xml" ] && set_xml_prop "$X/xsettings.xml" ThemeName MrRoss-Dark
+    [ -f "$X/xfwm4.xml" ] && set_xml_prop "$X/xfwm4.xml" theme MrRoss-Dark
+fi
+[ -f "$X/xsettings.xml" ] && set_xml_prop "$X/xsettings.xml" IconThemeName MrRoss
+
+M=/etc/xdg/xfce4/whiskermenu/defaults.rc
+if [ -f "$M" ]; then
+    sed -i \
+        -e 's/^button-icon=.*/button-icon=mrross-menu/' \
+        -e 's/^favorites=.*/favorites=exo-terminal-emulator.desktop,root-terminal.desktop,exo-file-manager.desktop,xfce-text-editor.desktop,exo-web-browser.desktop,mrross-tryhackme.desktop,mrross-vpn.desktop,mrross-help.desktop,exploit-database.desktop/' \
+        "$M"
+    log "menu: ikona i ulubione MrRoss"
+else
+    warn "nie znaleziono $M"
+fi
+
+for app in kali-www kali-docs kali-bugs kali-forums kali-tools kali-nethunter offsec-training vulnhub; do
+    f="/usr/share/applications/$app.desktop"
+    [ -f "$f" ] || continue
+    sed -i -e '/^NoDisplay=/d' -e '/^\[Desktop Entry\]/a NoDisplay=true' "$f"
+done
+log "ukryto skróty do stron Kali"
+
+Q=/etc/xdg/qterminal.org/qterminal.ini
+if [ -f "$Q" ]; then
+    sed -i 's/^colorScheme=.*/colorScheme=MrRoss/' "$Q"
+    log "terminal: schemat kolorów MrRoss"
+fi
+
+P=/usr/share/plymouth/themes/mrross
+if render -w 400 -h 240 -o "$P/logo.png" "$B/plymouth-logo.svg" \
+   && render -w 8 -h 8 -o "$P/bar.png" "$B/plymouth-bar.svg" \
+   && render -w 8 -h 8 -o "$P/track.png" "$B/plymouth-track.svg"; then
+    if command -v plymouth-set-default-theme >/dev/null 2>&1 && plymouth-set-default-theme mrross; then
+        log "ekran ładowania: $(plymouth-set-default-theme)"
+    else
+        warn "nie udało się ustawić motywu plymouth"
+    fi
+else
+    warn "nie udało się wyrenderować grafik plymouth"
+fi
+
+if render -w 256 -h 256 -o /etc/skel/.face "$B/logo.svg"; then
+    [ -L /etc/skel/.face.icon ] || cp -f /etc/skel/.face /etc/skel/.face.icon
+    log "awatar użytkownika: logo MrRoss"
+fi
+
+if divert /usr/lib/os-release; then
+    cat > /usr/lib/os-release <<EOF
+PRETTY_NAME="MrRoss OS $VER"
+NAME="MrRoss OS"
+VERSION_ID="$VER"
+VERSION="$VER (TryHackMe)"
+VERSION_CODENAME=kali-rolling
+ID=mrross
+ID_LIKE="kali debian"
+HOME_URL="https://github.com/MrRoss-Team/MrRoss-SYSTEM"
+SUPPORT_URL="https://github.com/MrRoss-Team/MrRoss-SYSTEM/issues"
+BUG_REPORT_URL="https://github.com/MrRoss-Team/MrRoss-SYSTEM/issues"
+LOGO=mrross-logo
+ANSI_COLOR="1;31"
+EOF
+    log "os-release: MrRoss OS $VER"
+else
+    warn "nie znaleziono /usr/lib/os-release"
+fi
+
+if divert /etc/issue; then
+    printf 'MrRoss OS %s \\n \\l\n\n' "$VER" > /etc/issue
+fi
+if divert /etc/issue.net; then
+    printf 'MrRoss OS %s\n' "$VER" > /etc/issue.net
+fi
+if divert /etc/motd; then
+    cat > /etc/motd <<'EOF'
+
+MrRoss OS – system do nauki na TryHackMe (na bazie Kali Linux).
+Programy w systemie są wolnym oprogramowaniem; licencje: /usr/share/doc/*/copyright.
+System nie daje ŻADNEJ GWARANCJI w zakresie dozwolonym przez prawo.
+Pomoc: thm help
+
+EOF
+fi
+
+F=/usr/share/firefox-esr/distribution/policies.json
+FX=/usr/share/mrross/firefox-policies.json
+if [ -f "$FX" ] && command -v python3 >/dev/null 2>&1; then
+    base=""
+    divert "$F" && base="$F.kali"
+    mkdir -p "$(dirname "$F")"
+    if python3 - "$base" "$FX" "$F" <<'EOF'
+import json
+import sys
+
+base_path, extra_path, out_path = sys.argv[1:4]
+data = {"policies": {}}
+if base_path:
+    with open(base_path, encoding="utf-8") as f:
+        data = json.load(f)
+with open(extra_path, encoding="utf-8") as f:
+    extra = json.load(f)
+data.setdefault("policies", {}).update(extra.get("policies", {}))
+with open(out_path, "w", encoding="utf-8") as f:
+    json.dump(data, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+EOF
+    then
+        log "Firefox: strona startowa i zakładki MrRoss"
+    else
+        warn "Firefox: nie udało się scalić policies.json – przywracam oryginał"
+        [ -n "$base" ] && cp -f "$base" "$F"
+    fi
+fi
+
+printf 'MrRoss OS %s (TryHackMe) – zbudowano %s\n' "$VER" "$(date -u +%Y-%m-%d)" > /etc/mrross-release
+
+exit 0
