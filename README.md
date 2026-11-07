@@ -5,6 +5,9 @@ przygotowany pod naukę na [TryHackMe](https://tryhackme.com). Uruchamiasz go
 w maszynie wirtualnej albo z pendrive'a, łączysz się z VPN jednym kliknięciem
 i masz porządek w notatkach z każdego pokoju.
 
+**Gotowe ISO do pobrania:** zakładka [Releases](https://github.com/MrRoss-Team/MrRoss-SYSTEM/releases)
+(pobierz wszystkie pliki `.part*`, `.sha256` i `join-iso.ps1`, potem uruchom `.\join-iso.ps1`).
+
 > Projekt nieoficjalny – nie jest powiązany z TryHackMe ani z OffSec (Kali Linux).
 
 ## Co jest w środku
