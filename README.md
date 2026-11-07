@@ -48,7 +48,9 @@ oraz 30–90 minut. Wynik to plik `hackbox-thm-<wersja>-amd64.iso` (ok. 3–4 GB
    ```powershell
    .\join-iso.ps1
    ```
-   Skrypt sprawdza też sumę SHA256.
+   Skrypt sprawdza też sumę SHA256. Skleja części w miejscu (bez kopiowania), więc oprócz pobranych
+   plików potrzebuje tylko ~2 GB wolnego miejsca; części usuwa po dopisaniu (zachowasz je opcją `-KeepParts`).
+   Przerwane sklejanie wystarczy uruchomić ponownie – skrypt je wznowi.
 
 Wersja z numerem: wypchnij tag, np. `git tag v1.0 && git push --tags`.
 W repozytorium publicznym minuty Actions są bez limitu, w prywatnym darmowe konto ma 2000 minut miesięcznie (jedno budowanie to ok. 60–90 minut).
