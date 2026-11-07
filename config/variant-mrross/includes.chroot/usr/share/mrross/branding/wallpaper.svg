@@ -31,7 +31,7 @@
     <polyline points="43,46 62,64 43,82" fill="none" stroke="#f2f4f8" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
     <line x1="70" y1="82" x2="87" y2="82" stroke="#e5383b" stroke-width="7" stroke-linecap="round"/>
   </g>
-  <text x="1300" y="862" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="92" letter-spacing="2"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b"> OS</tspan></text>
+  <text x="1300" y="862" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="92" letter-spacing="2"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b" dx="26">OS</tspan></text>
   <text x="1300" y="914" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="22" letter-spacing="7" fill="#8a96ad">SYSTEM DO NAUKI NA TRYHACKME</text>
   <text x="1300" y="1036" text-anchor="middle" font-family="Fira Code, DejaVu Sans Mono, monospace" font-size="18" fill="#4b5870">mrross / mrross  ·  thm help</text>
 </svg>

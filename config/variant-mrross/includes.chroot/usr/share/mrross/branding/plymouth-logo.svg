@@ -4,5 +4,5 @@
     <polyline points="43,46 62,64 43,82" fill="none" stroke="#f2f4f8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
     <line x1="70" y1="82" x2="87" y2="82" stroke="#e5383b" stroke-width="8" stroke-linecap="round"/>
   </g>
-  <text x="200" y="196" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="46" letter-spacing="1"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b"> OS</tspan></text>
+  <text x="200" y="196" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="46" letter-spacing="1"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b" dx="13">OS</tspan></text>
 </svg>

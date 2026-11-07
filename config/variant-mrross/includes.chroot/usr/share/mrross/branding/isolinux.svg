@@ -21,7 +21,7 @@
     <polyline points="43,46 62,64 43,82" fill="none" stroke="#f2f4f8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
     <line x1="70" y1="82" x2="87" y2="82" stroke="#e5383b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <text x="320" y="122" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="30" letter-spacing="1"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b"> OS</tspan></text>
+  <text x="320" y="122" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="30" letter-spacing="1"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b" dx="9">OS</tspan></text>
   <text x="320" y="146" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="10" letter-spacing="3.5" fill="#8a96ad">SYSTEM DO NAUKI NA TRYHACKME</text>
   <rect x="78" y="177" width="484" height="213" rx="6" fill="#0a1020" fill-opacity="0.78" stroke="#e5383b" stroke-opacity="0.55" stroke-width="1"/>
   <line x1="78" y1="208" x2="562" y2="208" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>

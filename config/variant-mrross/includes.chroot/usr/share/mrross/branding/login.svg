@@ -27,5 +27,5 @@
     <polyline points="43,46 62,64 43,82" fill="none" stroke="#f2f4f8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
     <line x1="70" y1="82" x2="87" y2="82" stroke="#e5383b" stroke-width="9" stroke-linecap="round"/>
   </g>
-  <text x="960" y="1010" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="26" letter-spacing="1"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b"> OS</tspan></text>
+  <text x="960" y="1010" text-anchor="middle" font-family="Cantarell, DejaVu Sans, sans-serif" font-size="26" letter-spacing="1"><tspan font-weight="700" fill="#f2f4f8">MrRoss</tspan><tspan font-weight="300" fill="#e5383b" dx="7">OS</tspan></text>
 </svg>
